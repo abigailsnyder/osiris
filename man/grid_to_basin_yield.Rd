@@ -5,6 +5,7 @@
 \title{grid_to_basin_yield}
 \usage{
 grid_to_basin_yield(
+  emulate_yield = TRUE,
   carbon = NULL,
   weight_floor_ha = 1,
   emulator_dir = NULL,
@@ -22,13 +23,18 @@ grid_to_basin_yield(
 )
 }
 \arguments{
+\item{emulate_yield}{Default=TRUE. boolean indicating gridded yields should be
+calculated via emulation using data from the below directories.}
+
 \item{carbon}{Default = NULL}
 
 \item{weight_floor_ha}{Default = 1}
 
 \item{emulator_dir}{Default = NULL}
 
-\item{input_dir}{Default = NULL}
+\item{input_dir}{Default = NULL. When emulate_yield=TRUE, this contains the
+appropriately processed climate data. When FALSE, this
+contains the gridded yield NetCDFS.}
 
 \item{area_dir}{Default = NULL}
 
