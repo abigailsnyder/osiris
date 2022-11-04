@@ -11,6 +11,7 @@
 #' @param iso_GCAM_basin_mapping Default = NULL
 #' @param esm_name Default = 'WRF'
 #' @param scn_name Default = 'rcp8p5_hot'
+#' @param cm_name Default = 'lpjml'
 #' @param max_CCImult Default = 2.5 Upper limit on positive climate impacts (multiplier)
 #' @param min_CCImult Default = 0.01 Lower limit on negative climate impacts (multiplier)
 #' @param weight_floor_ha Default = 1 Floor on area weights, in hectares. Below this climate impacts will be ignored. These are more likely than others to be problematic. 1 hectare = 0.01 km^2  = 1e-5 thou km^2, GCAM land units.
@@ -38,6 +39,7 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
                                 iso_GCAM_basin_mapping = NULL,
                                 esm_name = "WRF",
                                 scn_name = "rcp8p5_hot",
+                                cm_name = 'lpjml',
                                 max_CCImult = 2.5,
                                 min_CCImult = 0.01,
                                 weight_floor_ha = 1,
@@ -115,9 +117,9 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
   #.........................
 
   iso_GCAM_regID <- tibble::as_tibble(utils::read.csv(file=iso_GCAM_region_mapping,head = TRUE, comment.char = "#", sep = ",") )
-  FAO_ag_items_PRODSTAT <- tibble::as_tibble(utils::read.csv(file=FAO_ag_mapping,head = TRUE, sep = ",") )
+  FAO_ag_items_PRODSTAT <- tibble::as_tibble(utils::read.csv(file=FAO_ag_mapping,head = TRUE, sep = ",",  comment.char = "#") )
   L100.LDS_ag_HA_ha <- tibble::as_tibble(utils::read.csv(file=iso_harvest_area_mapping,head = TRUE, sep = ",", comment.char = "#") )
-  iso_GCAM_basinID <- tibble::as_tibble(utils::read.csv(file=iso_GCAM_basin_mapping,head = TRUE, sep = ",") )
+  iso_GCAM_basinID <- tibble::as_tibble(utils::read.csv(file=iso_GCAM_basin_mapping,head = TRUE, sep = ",",  comment.char = "#") )
 
   # correct abbreviations
   FAO_ag_items_PRODSTAT %>%
@@ -145,7 +147,9 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
     iso_GCAM_basinID
 
   # reading emulated basin yield files in a loop
-  emufiles.list <- list.files(path=emulated_basin_yield_dir, pattern=paste0(esm_name, "_", scn_name), full.names=TRUE, recursive=FALSE)
+  emufiles.list <- list.files(path=emulated_basin_yield_dir,
+                              pattern=paste0(cm_name, '_', esm_name, "_", scn_name),
+                              full.names=TRUE, recursive=FALSE)
   # emufiles.list <- sub( ".csv", "", emufiles.list )
   emufiles <- list()
 
@@ -288,11 +292,11 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
 
 
   # Join crop model and gcam commodity identifying information to the LDS harvested area set (which is HA by glu and gtap crop)
-  L100.LDS_ag_HA_ha$glu_code <- sprintf("GLU%03d",L100.LDS_ag_HA_ha$glu_code) # modify glu_code format
+  #L100.LDS_ag_HA_ha$glu_code <- sprintf("GLU%03d",L100.LDS_ag_HA_ha$glu_code) # modify glu_code format
   L100.LDS_ag_HA_ha %>%
     dplyr::rename(HA = value,
                   GTAP_crop = SAGE_crop,
-                  GLU = glu_code,
+                  #GLU = glu_code,
                   iso = ctry_iso) %>%
     dplyr::left_join(crops_gtap_gcam_allCMs, by = "GTAP_crop") %>%
     stats::na.omit() %>%
@@ -386,8 +390,8 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
 
 
   # write
-  utils::write.csv(ag_impacts_rcp_gcm_gcm_R_GLU_C_IRR_allyears1, paste0(write_dir, "/ag_impacts_", esm_name, "_", scn_name, "_rcp_gcm_gcm_R_GLU_C_IRR_allyears_RA",2*rolling_avg_years +1, "_gridcull_allyroutlier.csv"), row.names=FALSE)
-  utils::write.csv(bio_impacts_rcp_gcm_gcm_R_GLU_C_IRR_allyears1, paste0(write_dir, "/bio_impacts_", esm_name, "_", scn_name, "_rcp_gcm_gcm_R_GLU_C_IRR_allyears_RA",2*rolling_avg_years +1, "_gridcull_allyroutlier.csv"), row.names=FALSE)
+  utils::write.csv(ag_impacts_rcp_gcm_gcm_R_GLU_C_IRR_allyears1, paste0(write_dir, "/ag_impacts_", cm_name, '_', esm_name, "_", scn_name, "_rcp_gcm_cm_R_GLU_C_IRR_allyears_RA.csv"), row.names=FALSE)
+  utils::write.csv(bio_impacts_rcp_gcm_gcm_R_GLU_C_IRR_allyears1, paste0(write_dir, "/bio_impacts_", cm_name, '_', esm_name, "_", scn_name, "_rcp_gcm_cm_R_GLU_C_IRR_allyears_RA.csv"), row.names=FALSE)
 
 
   rlang::inform("yield_to_gcam_basin complete.")
