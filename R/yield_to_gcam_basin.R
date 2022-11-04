@@ -121,17 +121,52 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
   L100.LDS_ag_HA_ha <- tibble::as_tibble(utils::read.csv(file=iso_harvest_area_mapping,head = TRUE, sep = ",", comment.char = "#") )
   iso_GCAM_basinID <- tibble::as_tibble(utils::read.csv(file=iso_GCAM_basin_mapping,head = TRUE, sep = ",",  comment.char = "#") )
 
+  isimip_name_tbl <- data.frame('isimip_abbrev' = c("whe",
+                                                    "mai",
+                                                    "ric",
+                                                    "soy",
+                                                    "cas",
+                                                    "mgr",
+                                                    "mil",
+                                                    "nut",
+                                                    "pea",
+                                                    "rap",
+                                                    "sgb",
+                                                    "sug",
+                                                    "sun",
+                                                    "bar",
+                                                    "sor",
+                                                    "C3avg"),
+                                'crop' = c("wheat",
+                                           "corn",
+                                           "rice",
+                                           "soybean",
+                                           "cassava",
+                                           "managed grass",
+                                           "millet",
+                                           "groundnuts",
+                                           "field peas",
+                                           "rapeseed",
+                                           "sugar beet",
+                                           "sugarcane",
+                                           "sunflower",
+                                           "barley",
+                                           "sorghum",
+                                           "C3avg"))
+
   # correct abbreviations
   FAO_ag_items_PRODSTAT %>%
     dplyr::mutate_if(is.factor, as.character) %>%
-    dplyr::select(GTAP_crop, GCAM_commodity, lpjml_crop, epic_crop, gepic_crop, image_crop, lpjguess_crop, pdssat_crop, pegasus_crop) ->
+    dplyr::select(GTAP_crop, GCAM_commodity, lpjml_crop, gepic_crop) ->
     crops_gtap_gcam_allCMs
 
   FAO_ag_items_PRODSTAT %>%
     dplyr::mutate_if(is.factor, as.character) %>%
     dplyr::select(AgMIPAbbrev, C3avg_incl) %>%
-    dplyr::rename(cropname = AgMIPAbbrev)->
+    dplyr::rename(cropname = AgMIPAbbrev) %>%
+    na.omit() ->
     crops_masterlist_c3avgincl
+
 
   # switch factors to characters for remaining inputs
   iso_GCAM_regID %>%
@@ -163,6 +198,12 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
     dplyr::mutate_if(is.factor, as.character) ->
     emu_data1
 
+  # Change "maize" to "corn"
+  emu_data1$crop[emu_data1$crop == 'maize'] <- 'corn'
+
+
+  # Change "soy" to "soybean"
+  emu_data1$crop[emu_data1$crop == 'soy'] <- 'soybean'
 
 
   #.........................
@@ -174,8 +215,6 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
   if (!is.null(extrapolate_to)) {
     rlang::inform(paste0("Extrapolating basin yield data to ", extrapolate_to))
 
-    # Change "maize" to "corn"
-    emu_data1$crop[emu_data1$crop == 'maize'] <- 'corn'
 
     # Capitalize first letter of crop column (not all capitalized before)
     emu_data1$crop <- gsub("(?<!\\w)(.)","\\U\\1", emu_data1$crop, perl = TRUE)
@@ -260,6 +299,7 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
     dplyr::select(rcp, gcm, cropmodel, ID, crop, irr, weight, base, year, impact) ->
     emu_impacts_AllYears_base_glu_irr_isicrop
 
+
   rm(emu_yield_HA_base_glu_irr_isicrop)
   rm(emu_yield_HA_AllYears_glu_irr_isicrop)
 
@@ -272,7 +312,8 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
 
   # #Aggregate crops with weighted average
   emu_impacts_AllYears_base_glu_irr_isicrop %>%
-    dplyr::left_join(crops_masterlist_c3avgincl, by = c("crop" = "cropname")) %>%
+    dplyr::left_join(isimip_name_tbl, by = 'crop')  %>%
+    dplyr::left_join(crops_masterlist_c3avgincl, by =  c('isimip_abbrev' = "cropname")) %>%
     dplyr::filter(C3avg_incl == 1) %>%
     dplyr::select(-C3avg_incl) %>%
     # dplyr::filter(crop %in% FAO_ag_items_PRODSTAT$LPJmL_crop[FAO_ag_items_PRODSTAT$C3avg_include == 1]) %>%
@@ -291,25 +332,26 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
     emu_impacts_AllYears_base_glu_irr_isicrop_c3avg
 
 
+
   # Join crop model and gcam commodity identifying information to the LDS harvested area set (which is HA by glu and gtap crop)
   #L100.LDS_ag_HA_ha$glu_code <- sprintf("GLU%03d",L100.LDS_ag_HA_ha$glu_code) # modify glu_code format
   L100.LDS_ag_HA_ha %>%
-    dplyr::rename(HA = value,
-                  GTAP_crop = SAGE_crop,
-                  #GLU = glu_code,
-                  iso = ctry_iso) %>%
+    dplyr::rename(HA = value) %>%
     dplyr::left_join(crops_gtap_gcam_allCMs, by = "GTAP_crop") %>%
     stats::na.omit() %>%
     dplyr::filter(HA != 0) %>%
     dplyr::mutate(ID = as.numeric(substr(GLU, 4,6))) %>%
     # repeat for all model run info combos
-    repeat_add_columns(tibble::tibble(cropmodel = unique(emu_impacts_AllYears_base_glu_irr_isicrop_c3avg$cropmodel))) %>%
-    # dplyr::rename(lpjml_crop = LPJmL_crop,
-    #        gepic_crop = GEPIC_crop) %>%
-    tidyr::gather(cm_cropID, cm_crop, -iso, -GLU, -GTAP_crop, -HA, -ID, -cropmodel) %>% #, -GCAM_commodity) %>%  # may need to kill GCAM commodity here and join separately in next pipeline to avoid errors
-    #dplyr::filter(paste0(cropmodel, "_crop") == cm_cropID) %>%
-    dplyr::select(-cm_cropID) ->
+    repeat_add_columns(tibble::tibble(cropmodel = unique(emu_impacts_AllYears_base_glu_irr_isicrop_c3avg$cropmodel)))%>%
+    dplyr::select(-GCAM_commodity) %>%
+    tidyr::gather(cm_cropID, cm_crop, -iso, -GLU, -GTAP_crop, -HA, -ID, -cropmodel) %>%
+    dplyr::filter(paste0(cropmodel, "_crop") == cm_cropID) %>%
+    dplyr::select(-cm_cropID) %>%
+    dplyr::left_join(isimip_name_tbl, by = c('cm_crop' = 'isimip_abbrev')) %>%
+    dplyr::select(-cm_crop) %>%
+    dplyr::rename(cm_crop =crop)->
     LDS_HA_iso_glu_gtap_cm_cmcrop
+
 
 
   # join the HA and use to aggregate to GCAM commodity for each region-glu-irr
@@ -324,6 +366,7 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
     dplyr::ungroup() %>%
     dplyr::mutate(impact = dplyr::if_else(impact < min_CCImult, min_CCImult, impact)) ->
     ag_impacts_rcp_gcm_gcm_R_GLU_C_IRR_allyears
+
 
 
   # Remove FodderGrass for consistency across crop models (only epic and lpjguess cover it)
