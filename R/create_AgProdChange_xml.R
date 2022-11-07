@@ -4,9 +4,11 @@
 #' updates and saves the new AgProdChange csv and xml files.
 #'
 #' @param write_dir Default = "outputs_create_AgProdChange_xml". Output Folder
-#' @param esm_name Default = 'WRF'
+#' @param esm_name Default = 'WRF'.
 #' @param scn_name Default = 'rcp8p5_hot'
-#' @param ssp Default = 'ssp3'
+#' @param cm_name Default = 'lpjml'
+#' @param ssp Default = 'ssp3'. Note that this argument doesn't apply to SSP3, it
+#' just specifies the name for the file writing.
 #' @param ag_irr_ref Default = NULL
 #' @param bio_irr_ref Default = NULL
 #' @param ag_impacts Default = NULL
@@ -32,6 +34,7 @@
 create_AgProdChange_xml <- function(write_dir = "outputs_create_AgProdChange_xml",
                                     esm_name = 'WRF',
                                     scn_name = 'rcp8p5_hot',
+                                    cm_name = 'lpjml',
                                     ssp = 'ssp3',
                                     ag_irr_ref = NULL,
                                     bio_irr_ref = NULL,
@@ -376,8 +379,8 @@ create_AgProdChange_xml <- function(write_dir = "outputs_create_AgProdChange_xml
     L2052.CCI
 
 
-  #loop over IDS and save as own csv table
-  options("gcamdata.have_java"=TRUE)
+  # #loop over IDS and save as own csv table
+  # options("gcamdata.have_java"=TRUE)
 
   for(i in unique(L2052.CCI$scenID)){
     L2052.CCI %>% dplyr::filter(scenID==i) -> A
@@ -402,8 +405,8 @@ create_AgProdChange_xml <- function(write_dir = "outputs_create_AgProdChange_xml
 
   }
 
-  # write out xml file
-  options("gcamdata.use_java"=TRUE)
+  # # write out xml file
+  # options("gcamdata.use_java"=TRUE)
 
   filelist <- list.files(path=write_dir, pattern = paste0(scn_name, "_", ssp, "_", esm_name), full.names=TRUE, recursive=FALSE)
   filelist <- filelist[!(grepl(".xml", filelist, fixed=TRUE))]
@@ -414,9 +417,9 @@ create_AgProdChange_xml <- function(write_dir = "outputs_create_AgProdChange_xml
     tibble::as_tibble(utils::read.csv(f, skip = 4, stringsAsFactors = F)) ->
       x
 
-    gcamdata::create_xml(paste0(write_dir, "/", filename1, ".xml")) %>%
-      gcamdata::add_xml_data(x, "AgProdChange") %>%
-      gcamdata::run_xml_conversion()
+    # gcamdata::create_xml(paste0(write_dir, "/", filename1, ".xml")) %>%
+    #   gcamdata::add_xml_data(x, "AgProdChange") %>%
+    #   gcamdata::run_xml_conversion()
 
   })
 

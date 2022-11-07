@@ -8,6 +8,7 @@ create_AgProdChange_xml(
   write_dir = "outputs_create_AgProdChange_xml",
   esm_name = "WRF",
   scn_name = "rcp8p5_hot",
+  cm_name = "lpjml",
   ssp = "ssp3",
   ag_irr_ref = NULL,
   bio_irr_ref = NULL,
@@ -23,11 +24,14 @@ create_AgProdChange_xml(
 \arguments{
 \item{write_dir}{Default = "outputs_create_AgProdChange_xml". Output Folder}
 
-\item{esm_name}{Default = 'WRF'}
+\item{esm_name}{Default = 'WRF'.}
 
 \item{scn_name}{Default = 'rcp8p5_hot'}
 
-\item{ssp}{Default = 'ssp3'}
+\item{cm_name}{Default = 'lpjml'}
+
+\item{ssp}{Default = 'ssp3'. Note that this argument doesn't apply to SSP3, it
+just specifies the name for the file writing.}
 
 \item{ag_irr_ref}{Default = NULL}
 
