@@ -253,6 +253,19 @@ yield_to_gcam_basin <- function(write_dir = "outputs_yield_to_gcam_basin",
 
   rlang::inform("Performing computations")
 
+  # if you haven't run the extrapolation and there is still no
+  # 2100 in the data, just repeat 2099 data since it all gets smoothed
+  # anyway
+  if(maxFutYear == 2100 & max(emu_data1$year)<2100){
+    rlang::inform("Year 2100 missing from data, repeating 2099 data to fill out")
+    emu_data1 %>%
+      dplyr::filter(year == 2099) %>%
+      dplyr::distinct() %>%
+      dplyr::mutate(year = 2100) %>%
+      dplyr::bind_rows(emu_data1, .) ->
+      emu_data1
+  }
+
   emu_data1 %>%
     dplyr::arrange(rcp, gcm, cropmodel, id, crop, irr, year) %>%
     # Drop inland water and any rows where the area weight is less than the exogenous floor
