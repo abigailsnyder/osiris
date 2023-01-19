@@ -138,9 +138,23 @@ grid_to_basin_yield <- function(emulate_yield = TRUE,
                              regexec("_co2_\\s*(.*?)\\s*_global_",
                                      nc_name))[[1]][2]
 
+
     time_since_yr <- as.integer(regmatches(ncin$dim$time$units,
                                            regexec("since \\s*(.*?)\\s*-1-1",
                                                    ncin$dim$time$units))[[1]][2])
+
+    if(is.na(time_since_yr)){
+      time_since_yr <- as.integer(regmatches(ncin$dim$time$units,
+                                             regexec("since \\s*(.*?)\\s*-01-01",
+                                                     ncin$dim$time$units))[[1]][2])
+    }
+
+    #if the time unit is STILL NA, print a message so people know where to look
+    if(is.na(time_since_yr)){
+      stop("the time dimension unit is not in format 'years since yyyy-01-01' or 'years since yyyy-1-1',
+       regular expression extraction of yyyy failed.
+       check the nc$dim$time$units of netcdf trying to reshape with reshape_isimip_yield_nc()")
+    }
 
 
     nc_lon <- ncdf4::ncvar_get(ncin,'lon')
@@ -873,6 +887,9 @@ grid_to_basin_yield <- function(emulate_yield = TRUE,
     # In this case, that's the crop grid cells.
     rlang::inform(paste0("Aggregating irr and rfd gridded yield for ", crop))
 
+    message(head(ir_yields))
+
+    message(head(rf_yields))
     ir_yields_basin  <- aggregate_halfdeg_yield2basin(ir_yields)
     rf_yields_basin  <- aggregate_halfdeg_yield2basin(rf_yields)
 
