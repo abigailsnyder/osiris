@@ -895,6 +895,15 @@ grid_to_basin_yield <- function(emulate_yield = TRUE,
                      ir_yields_basin) ->
       yield.basin
 
+    # make sure the crop names are the full crop names, not the isimip abbrev
+    if (!emulate_yield){
+      crop_copy <- crop
+      yield.basin %>%
+        dplyr::mutate(crop = dplyr::if_else(crop %in% c("maize", "rice", "soy", "wheat"),
+                                            crop,  crop_copy )) ->
+        yield.basin
+    }
+
 
     years <- min(yield.basin$year):max(yield.basin$year)
 
