@@ -887,9 +887,7 @@ grid_to_basin_yield <- function(emulate_yield = TRUE,
     # In this case, that's the crop grid cells.
     rlang::inform(paste0("Aggregating irr and rfd gridded yield for ", crop))
 
-    message(head(ir_yields))
 
-    message(head(rf_yields))
     ir_yields_basin  <- aggregate_halfdeg_yield2basin(ir_yields)
     rf_yields_basin  <- aggregate_halfdeg_yield2basin(rf_yields)
 
